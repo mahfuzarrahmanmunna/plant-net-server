@@ -44,6 +44,10 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 })
 async function run() {
   try {
+    //  DB collection
+    const db = client.db('plantDB');
+    const plantCollection = db.collection('plants')
+
     // Generate jwt token
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -54,10 +58,10 @@ async function run() {
       res
         .cookie('token', token, {
           httpOnly: true,
-          // secure: process.env.NODE_ENV === 'production',
-          secure: false,
-          // sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-          sameSite: 'lax'
+          secure: process.env.NODE_ENV === 'production',
+          // secure: false,
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          // sameSite: 'lax'
         })
       res.send({ success: true })
     })
@@ -76,6 +80,28 @@ async function run() {
       }
     })
 
+    // add a plant in database
+    app.post('/add-plant', async (req, res) => {
+      const plant = req.body;
+      const result = await plantCollection.insertOne(plant)
+      // console.log(plant);
+      res.send(result)
+    })
+
+    // get the plant data
+    app.get('/all-plants', async (req, res) => {
+      const result = await plantCollection.find().toArray();
+      res.send(result)
+    })
+
+    // get single data
+    app.get('/single-plant/:id', async (req, res) => {
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) }
+      const result = await plantCollection.findOne(query)
+      console.log(id);
+      res.send(result)
+    })
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
     console.log(
